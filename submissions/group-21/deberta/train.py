@@ -16,3 +16,102 @@ from transformers import (
 MODEL_NAME = "microsoft/deberta-v3-base"
 MAX_LENGTH = 512
 
+class PassageDataset(torch.utils.data.Dataset):
+    def __init__(self, frame, tokenizer):
+        self.inputs = tokenizer(
+            frame["text"].tolist(),
+            truncation=True,
+            max_length=MAX_LENGTH,
+        )
+        self.labels = frame["label"].tolist()
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitems__(self, index):
+        item = {key: values[index] for key, values in self.inputs.items()}
+        item["labels"] = self.labels[index]
+        return item
+
+    def ai_probabilities(logits):
+        return torch.as_tensor(logits).float().softmax(dim=-1)[:, 1].numpy()
+
+    def compute_metrics(prediction):
+        scores = ai_probabilities(prediction.predictions)
+        return {"auroc": roc_auc_score(prediction.label_ids, scores)}
+
+    def main():
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--train-csv", type=Path, required=True)
+        parser.add_argument("--output-dir", type=Path, required=True)
+        parser.add_argument("--seed", type=int, default=42)
+        parser.add_argument("--epochs", type=int, default=3)
+        parser.add_argument("--batch-size", type=int, default=4)
+        args = parser.parse_args()
+
+        set_seed(args.seed)
+        data = pd.read_csv(args.train_csv)
+        train_frame, validation_frame = train_test_split(
+            data,
+            test_size=0.20,
+            stratify=data["label"],
+            random_state=args.seed,
+        )
+
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=False)
+        model = AutoModelForSequenceClassification.from_pretrained(
+            MODEL_NAME,
+            num_labels=2,
+            id2label={0: "HUMAN", 1: "AI"},
+            label2id={"HUMAN": 0, "AI": 1},
+        )
+
+        training_args = TrainingArguments(
+            output_dir=str(args.output_dir / "checkpoints"),
+            learning_rate=2e-5,
+            num_train_epochs=args.epochs,
+            per_device_train_batch_size=args.batch_size,
+            per_device_eval_batch_size=args.batch_size,
+            gradient_accumulation_steps=4,
+            weight_decay=0.01,
+            warmup_ratio=0.10,
+            eval_strategy="epoch",
+            save_strategy="epoch",
+            save_total_limit=2,
+            load_best_model_at_end=True,
+            metric_for_best_model="auroc",
+            greater_is_better=True,
+            bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
+            seed=args.seed,
+            report_to="none",
+        )
+
+        validation_dataset = PassageDataset(validation_frame, tokenizer)
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=PassageDataset(train_frame, tokenizer),
+            eval_dataset=validation_dataset,
+            processing_class=tokenizer,
+            data_collator=DataCollatorWithPadding(tokenizer),
+            compute_metrics=compute_metrics,
+        )
+
+        trainer.train()
+
+        model_dir = args.output_dir / "best_model"
+        trainer.save_model(str(model_dir))
+        tokenizer.save_pretrained(model_dir)
+
+        result = trainer.predict(validation_dataset)
+        validation_output = validation_frame[["id", "label"]].copy()
+        validation_output["ai_probability"] = ai_probabilities(result.predictions)
+        validation_output.to_csv(
+            args.output_dir / "validation_predictions.csv", index=False
+        )
+
+        print(f"Validation AUROC: {result.metrics['test_auroc']:.4f}")
+        print(f"Saved best model to {model_dir}")
+
+    if __name__ == "__main__":
+        main()
