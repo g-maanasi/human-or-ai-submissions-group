@@ -22,3 +22,27 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(args.model_dir)
     model.to(device)
     model.eval()
+
+    passages = test["text"].tolist()
+    probabilities = []
+    with torch.inference.mode():
+        for start in range(0, len(passages), args.batch_size):
+            batch = tokenizer(
+                passages[start : start + args.batch_size],
+                padding=True,
+                truncation=True,
+                max_length=MAX_LENGTH,
+                return_tensors="pt",
+            ).to(device)
+
+            logits = model(**batch).logits
+            ai_scores = logits.float().softmax(dim=-1)[:, 1]
+            probabilities.extend(ai_scores.cpu().tolist())
+
+    submission = pd.DataFrame({"id": test["id"], "label": probabilities})
+    args.output_csv.parent.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(args.output_csv, index=False)
+    print(f"Wrote {len(submission)} predictions to {args.output_csv}")
+
+if __name__ == "__main__":
+    main()
