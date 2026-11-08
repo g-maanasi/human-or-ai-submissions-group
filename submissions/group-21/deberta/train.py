@@ -14,7 +14,7 @@ from transformers import (
 )
 
 MODEL_NAME = "microsoft/deberta-v3-base"
-MAX_LENGTH = 512
+MAX_LENGTH = 256
 
 class PassageDataset(torch.utils.data.Dataset):
     def __init__(self, frame, tokenizer):
@@ -28,7 +28,7 @@ class PassageDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
 
-    def __getitems__(self, index):
+    def __getitem__(self, index):
         item = {key: values[index] for key, values in self.inputs.items()}
         item["labels"] = self.labels[index]
         return item
@@ -47,6 +47,8 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--grad-accum", type=int, default=4)
+    parser.add_argument("--eval-batch-size", type=int, default=8)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -71,8 +73,9 @@ def main():
         learning_rate=2e-5,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.batch_size,
-        per_device_eval_batch_size=args.batch_size,
-        gradient_accumulation_steps=4,
+        per_device_eval_batch_size=args.eval_batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        gradient_checkpointing=True,
         weight_decay=0.01,
         warmup_ratio=0.10,
         eval_strategy="epoch",

@@ -25,7 +25,7 @@ def main():
 
     passages = test["text"].tolist()
     probabilities = []
-    with torch.inference.mode():
+    with torch.inference_mode():
         for start in range(0, len(passages), args.batch_size):
             batch = tokenizer(
                 passages[start : start + args.batch_size],
