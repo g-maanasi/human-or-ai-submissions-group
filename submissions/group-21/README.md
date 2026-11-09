@@ -3,7 +3,7 @@
 **Team members**
 
 - Maanasi Ganapathy ([mg2563]) — DeBERTa-v3-base
-- Ke Dong(kd563) — Linear SVM with TF-IDF features
+- Ke Dong (kd563) — Linear SVM with TF-IDF features
 - [Team member 3] ([NetID]) — [Model or contribution]
 
 **Kaggle team name:** `[Kaggle team name]`
