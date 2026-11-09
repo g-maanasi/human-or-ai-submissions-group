@@ -3,7 +3,7 @@
 **Team members**
 
 - Maanasi Ganapathy ([mg2563]) — DeBERTa-v3-base
-- [Team member 2] ([NetID]) — [Model or contribution]
+- Ke Dong(kd563) — Linear SVM with TF-IDF features
 - [Team member 3] ([NetID]) — [Model or contribution]
 
 **Kaggle team name:** `[Kaggle team name]`
@@ -54,14 +54,14 @@ python deberta/predict.py --help
 
 Prediction uses the saved `best_model` checkpoint and writes one probability of AI authorship per test ID to `submission.csv`.
 
-## [Model 2] | [Team member 2]
+## Linear SVM | Ke Dong
 
-- **Model and preprocessing:** [Describe the approach]
-- **Training and validation command:** `[Command]`
-- **Prediction command:** `[Command]`
-- **Seed and validation split:** [Details]
-- **Results:** [Training AUROC, validation AUROC, and training time]
-
+- **Model and preprocessing:** Word TF-IDF with unigrams and bigrams, `max_features=50000`, `min_df=2`, and `sublinear_tf=True`, followed by `LinearSVC`. Compared `C=[0.1, 1, 10]` and selected `C=1` using validation AUROC. AI probabilities are obtained through sigmoid calibration with three-fold stratified cross-validation within the training partition. Each calibration fold fits its own complete TF-IDF and SVM pipeline.
+- **Training and validation command:** From the repository root, run `python submissions/group-21/svm/svm_model.py`.
+- **Prediction command:** The same command also refits the calibrated model on all 10,000 labeled examples and generates `submissions/group-21/svm/results/submission.csv`. Training and prediction are implemented in one script; no separate prediction command is required.
+- **Seed and validation split:** Random seed `42`; fixed stratified split of 8,000 training examples and 2,000 validation examples from the original `train.csv`. TF-IDF fitting and probability calibration exclude the held-out validation data. Split IDs are saved in `results/split.csv` within the SVM directory.
+- **Results:** Selected `C=1`. Training AUROC: **1.000000**; validation AUROC: **0.942530**. Calibrated validation AUROC: **0.942530**. Selected uncalibrated pipeline training time: **3.85 seconds**, excluding evaluation, probability calibration, hyperparameter search, and final refitting.
+  
 ## [Model 3] | [Team member 3]
 
 - **Model and preprocessing:** [Describe the approach]
