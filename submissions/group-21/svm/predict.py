@@ -1,76 +1,85 @@
+import argparse
 from pathlib import Path
 
 import joblib
 import pandas as pd
 
 
-# 1. Configuration
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-OUTPUT_DIR = BASE_DIR / "results"
-MODEL_PATH = OUTPUT_DIR / "svm_model.joblib"
+TEAM_DIR = BASE_DIR.parent
 
 
-# 2. Load the trained model
-if not MODEL_PATH.exists():
-    raise FileNotFoundError(
-        f"Model not found: {MODEL_PATH}. Run train.py first."
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate predictions using the saved Round 2 SVM."
     )
+    parser.add_argument(
+        "--test-csv",
+        type=Path,
+        default=TEAM_DIR / "test.csv"
+    )
+    parser.add_argument(
+        "--model-path",
+        type=Path,
+        default=BASE_DIR / "svm_results" / "svm_model.joblib"
+    )
+    parser.add_argument(
+        "--output-csv",
+        type=Path,
+        default=BASE_DIR / "svm_results" / "submission_svm_round2.csv"
+    )
+    args = parser.parse_args()
 
-# Load only a trusted model, such as the file produced by train.py.
-calibrated_model = joblib.load(MODEL_PATH)
+    if not args.model_path.is_file():
+        raise FileNotFoundError(
+            f"Model not found: {args.model_path}. "
+            "Run train.py first."
+        )
+
+    test = pd.read_csv(args.test_csv)
+
+    if not {"id", "text"}.issubset(test.columns):
+        raise ValueError("Test CSV must contain id and text columns.")
+
+    if test[["id", "text"]].isna().any().any():
+        raise ValueError("Test data contains missing values.")
+
+    if not test["id"].is_unique:
+        raise ValueError("Test IDs must be unique.")
+
+    if not test["text"].map(lambda value: isinstance(value, str)).all():
+        raise ValueError("All text values must be strings.")
+
+    model = joblib.load(args.model_path)
+
+    # Locate the AI class explicitly instead of assuming its position.
+    classes = list(model.classes_)
+    if 1 not in classes:
+        raise ValueError("The saved model does not contain AI class 1.")
+
+    ai_class_index = classes.index(1)
+    probabilities = model.predict_proba(test["text"])[:, ai_class_index]
+
+    submission = pd.DataFrame({
+        "id": test["id"].to_numpy(),
+        "label": probabilities
+    })
+
+    if (
+        submission["label"].isna().any()
+        or not submission["label"].between(0, 1).all()
+    ):
+        raise ValueError("Predicted probabilities are invalid.")
+
+    # Preserve the input test ID order.
+    assert submission["id"].equals(test["id"].reset_index(drop=True))
+
+    args.output_csv.parent.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(args.output_csv, index=False)
+
+    print(f"Predictions saved: {len(submission):,} rows")
+    print(f"Output file: {args.output_csv.resolve()}")
 
 
-# 3. Load test data
-test = pd.read_csv(DATA_DIR / "test.csv")
-
-assert test["id"].is_unique, "Test IDs must be unique."
-assert test["text"].notna().all(), (
-    "Test text contains missing values."
-)
-
-sample_path = DATA_DIR / "sample_submission.csv"
-sample = (
-    pd.read_csv(sample_path)
-    if sample_path.exists()
-    else test[["id"]].copy()
-)
-
-
-# 4. Predict AI probabilities
-ai_class_index = list(calibrated_model.classes_).index(1)
-
-test_results = pd.DataFrame({
-    "id": test["id"],
-    "label": calibrated_model.predict_proba(
-        test["text"]
-    )[:, ai_class_index]
-})
-
-
-# 5. Match the sample submission order
-assert sample["id"].is_unique, (
-    "Sample submission IDs must be unique."
-)
-assert set(sample["id"]) == set(test["id"]), (
-    "Sample submission IDs must match test IDs."
-)
-
-submission = sample[["id"]].merge(
-    test_results,
-    on="id",
-    how="left",
-    validate="one_to_one"
-)
-
-assert len(submission) == len(test)
-assert submission["label"].notna().all()
-assert submission["label"].between(0, 1).all()
-
-
-# 6. Save submission
-submission_path = OUTPUT_DIR / "submission.csv"
-submission.to_csv(submission_path, index=False)
-
-print(f"\nSubmission saved: {len(submission):,} test predictions")
-print(f"Submission file: {submission_path.resolve()}")
+if __name__ == "__main__":
+    main()
