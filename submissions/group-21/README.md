@@ -2,7 +2,7 @@
 
 **Team members**
 
-- Maanasi Ganapathy ([mg2563]) — DeBERTa-v3-base
+- Maanasi Ganapathy (mg2563) — DeBERTa-v3-base
 - Ke Dong (kd563) — Linear SVM with TF-IDF features
 - [Team member 3] ([NetID]) — [Model or contribution]
 
@@ -28,7 +28,7 @@ I fine-tuned `microsoft/deberta-v3-base` for binary text classification over thr
 python deberta/train.py --help
 ```
 
-**Training command:** 
+**Training command:**
 Mac:
 `PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 caffeinate -i python3 submissions/group-21/deberta/train.py \
   --train-csv submissions/group-21/train.csv \
@@ -74,7 +74,7 @@ Prediction uses the saved `best_model` checkpoint and writes one probability of 
 - **Prediction command:** The same command also refits the calibrated model on all 10,000 labeled examples and generates `submissions/group-21/svm/results/submission.csv`. Training and prediction are implemented in one script; no separate prediction command is required.
 - **Seed and validation split:** Random seed `42`; fixed stratified split of 8,000 training examples and 2,000 validation examples from the original `train.csv`. TF-IDF fitting and probability calibration exclude the held-out validation data. Split IDs are saved in `results/split.csv` within the SVM directory.
 - **Results:** Selected `C=1`. Training AUROC: **1.000000**; validation AUROC: **0.942530**. Calibrated validation AUROC: **0.942530**. Selected uncalibrated pipeline training time: **3.85 seconds**, excluding evaluation, probability calibration, hyperparameter search, and final refitting.
-  
+
 ## [Model 3] | [Team member 3]
 
 - **Model and preprocessing:** [Describe the approach]
