@@ -4,9 +4,29 @@
 
 - Maanasi Ganapathy (mg2563) — DeBERTa-v3-base
 - Ke Dong (kd563) — Linear SVM with TF-IDF features
-- [Team member 3] ([NetID]) — [Model or contribution]
+- Reuben Ronald Miranda (rrm226) | DistilRoBERTa, robust feature blend and evaluation
 
-## Setup
+**Kaggle team:** Group 21.
+
+## Selected submission
+
+The selected entry combines the standardized v2 score (75%) with the fine-tuned DistilRoBERTa margin (25%). It reached 0.996868 AUROC on the 2,000 original validation passages and a reported 0.95934 on the public leaderboard. The v2 model combines boosted style and language-model features with word TF-IDF logistic regression. All controlled fits use seed 42.
+
+[Open the selected pipeline in Colab](https://colab.research.google.com/github/g-maanasi/human-or-ai-submissions-group/blob/submission/group-21/submissions/group-21/distilroberta/Group21_Human_or_AI.ipynb) or use the commands below from the team directory. The selected pipeline uses a separate Python 3.11/3.12 environment with a CUDA GPU. Set the data path to the folder containing the four competition CSVs.
+
+```bash
+cd distilroberta
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python reproduce.py --data-dir /path/to/data --out-dir outputs
+```
+
+The last command evaluates the fixed split, refits on all 10,000 labels and writes `outputs/submission.csv` in sample order. [Detailed commands, required files and experiment order](distilroberta/README.md)
+
+AI assistants helped develop and debug the experimental code, package the notebooks, and draft the report. The team ran the models and compared their scores. We checked the selected blend against the saved component predictions and the Kaggle sample IDs.
+
+## Setup for the DeBERTa and SVM experiments
 
 Run these commands from `submissions/group-21/`:
 
@@ -91,13 +111,3 @@ Prediction uses the saved `best_model` checkpoint and writes one probability of 
 - **Reproducibility:** Keep raw competition data and trained model artifacts out of Git. Document the actual data location and saved model path in the commands above. The saved prediction pipeline must include the fitted TF-IDF features, SVM classifier, and probability calibration. Dependencies are listed in the team’s `requirements.txt`.
 
 - **Interpretation and limitations:** Adding character features improved both validation and public leaderboard performance relative to the word-only baseline. However, a substantial validation-to-leaderboard gap remains. This is consistent with limited generalization to unfamiliar domains, generators, and modified passages, although the exact causes have not been established. The small validation improvement from the first combined-feature model to Round 2 was not conclusive in the paired bootstrap comparison. Public leaderboard AUROC is not the final private leaderboard score.
-
-
-
-## [Model 3] | [Team member 3]
-
-- **Model and preprocessing:** [Describe the approach]
-- **Training and validation command:** `[Command]`
-- **Prediction command:** `[Command]`
-- **Seed and validation split:** [Details]
-- **Results:** [Training AUROC, validation AUROC, and training time]
