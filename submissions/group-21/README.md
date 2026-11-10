@@ -67,13 +67,32 @@ python deberta/predict.py --help
 
 Prediction uses the saved `best_model` checkpoint and writes one probability of AI authorship per test ID to `submission.csv`.
 
-## Linear SVM | Ke Dong
+## Linear SVM | Ke Dong (kd563)
 
-- **Model and preprocessing:** Word TF-IDF with unigrams and bigrams, `max_features=50000`, `min_df=2`, and `sublinear_tf=True`, followed by `LinearSVC`. Compared `C=[0.1, 1, 10]` and selected `C=1` using validation AUROC. AI probabilities are obtained through sigmoid calibration with three-fold stratified cross-validation within the training partition. Each calibration fold fits its own complete TF-IDF and SVM pipeline.
-- **Training and validation command:** From the repository root, run `python submissions/group-21/svm/svm_model.py`.
-- **Prediction command:** The same command also refits the calibrated model on all 10,000 labeled examples and generates `submissions/group-21/svm/results/submission.csv`. Training and prediction are implemented in one script; no separate prediction command is required.
-- **Seed and validation split:** Random seed `42`; fixed stratified split of 8,000 training examples and 2,000 validation examples from the original `train.csv`. TF-IDF fitting and probability calibration exclude the held-out validation data. Split IDs are saved in `results/split.csv` within the SVM directory.
-- **Results:** Selected `C=1`. Training AUROC: **1.000000**; validation AUROC: **0.942530**. Calibrated validation AUROC: **0.942530**. Selected uncalibrated pipeline training time: **3.85 seconds**, excluding evaluation, probability calibration, hyperparameter search, and final refitting.
+- **Model and preprocessing:** The selected model combines word and character TF-IDF features, followed by `LinearSVC(C=1)`. Word features use unigrams and bigrams, `max_features=50000`, and `min_df=2`. Character features preserve case and use 3–6-grams, `max_features=200000`, and `min_df=3`. Both feature blocks use `sublinear_tf=True` and L2 normalization. AI probabilities are obtained through sigmoid calibration with three-fold stratified cross-validation within the training partition, using `ensemble=False`. Each calibration fold fits its own complete TF-IDF and SVM pipeline.
+
+- **Training and validation command:** The training entrypoint is `submissions/group-21/svm/train.py`. Run it from the repository root with the data and output arguments supported by the script. 
+
+- **Prediction command:** The prediction entrypoint is `submissions/group-21/svm/predict.py`. 
+
+- **Seed and validation split:** Random seed `42`; a fixed stratified split of the original `train.csv` into 8,000 training examples and 2,000 validation examples. Feature fitting and probability calibration exclude the held-out validation data. The validation set is used for model selection. The selected Round 2 submission was generated after refitting the calibrated pipeline on all 10,000 labeled examples.
+
+- **Experiments and model selection:** The initial word-only SVM compared `C=[0.1, 1, 10]`. Subsequent experiments added character features and compared alternative character representations. In Round 2, `C=1` was held fixed while testing a larger lowercased character vocabulary, word-boundary character features, and case-sensitive 3–6-gram character features. The case-sensitive 3–6-gram configuration achieved the highest validation AUROC and was selected.
+
+- **Results:**
+
+  | Model | Validation AUROC | Kaggle Public AUROC |
+  | Original word-only TF-IDF SVM | 0.942530 | 0.84925 |
+  | Word + lowercase character 3–5-gram TF-IDF SVM | 0.970462 | 0.87440 |
+  | Selected: word + case-sensitive character 3–6-gram TF-IDF SVM*| 0.970807| 0.89627 |
+
+  For the selected configuration, uncalibrated training AUROC was **1.000000**. Validation AUROC before and after sigmoid calibration was **0.970807**. Fitting the selected uncalibrated TF-IDF and SVM pipeline took **43.84 seconds**, excluding evaluation, probability calibration, other experimental configurations, and final refitting.
+
+- **Reproducibility:** Keep raw competition data and trained model artifacts out of Git. Document the actual data location and saved model path in the commands above. The saved prediction pipeline must include the fitted TF-IDF features, SVM classifier, and probability calibration. Dependencies are listed in the team’s `requirements.txt`.
+
+- **Interpretation and limitations:** Adding character features improved both validation and public leaderboard performance relative to the word-only baseline. However, a substantial validation-to-leaderboard gap remains. This is consistent with limited generalization to unfamiliar domains, generators, and modified passages, although the exact causes have not been established. The small validation improvement from the first combined-feature model to Round 2 was not conclusive in the paired bootstrap comparison. Public leaderboard AUROC is not the final private leaderboard score.
+
+
 
 ## [Model 3] | [Team member 3]
 
