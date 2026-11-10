@@ -6,8 +6,6 @@
 - Ke Dong (kd563) — Linear SVM with TF-IDF features
 - [Team member 3] ([NetID]) — [Model or contribution]
 
-**Kaggle team name:** `[Kaggle team name]`
-
 ## Setup
 
 Run these commands from `submissions/group-21/`:
@@ -30,7 +28,22 @@ I fine-tuned `microsoft/deberta-v3-base` for binary text classification over thr
 python deberta/train.py --help
 ```
 
-**Training command:** `[Paste the exact command used for the reported run]`
+**Training command:** 
+Mac:
+`PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 caffeinate -i python3 submissions/group-21/deberta/train.py \
+  --train-csv submissions/group-21/train.csv \
+  --output-dir ~/runs/group21-deberta \
+  --batch-size 1 \
+  --grad-accum 16 \
+  --eval-batch-size 2`
+
+Windows:
+`python submissions/group-21/deberta/train.py \
+  --train-csv submissions/group-21/train.csv \
+  --output-dir "$HOME/runs/group21-deberta" \
+  --batch-size 1 \
+  --grad-accum 16 \
+  --eval-batch-size 2`
 
 - **Seed:** `42`
 - **Split:** Stratified split of `train.csv` into 8,000 training rows and 2,000 validation rows
