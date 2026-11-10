@@ -1,6 +1,7 @@
 from pathlib import Path
 import time
 
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
@@ -12,41 +13,29 @@ from sklearn.svm import LinearSVC
 
 
 # 1. Configuration
-# Run this script from the repository root.
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 OUTPUT_DIR = BASE_DIR / "results"
+
 SEED = 42
 C_VALUES = [0.1, 1.0, 10.0]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# 2. Load data
+# 2. Load training data
 data = pd.read_csv(DATA_DIR / "train.csv")
-test = pd.read_csv(DATA_DIR / "test.csv")
-
-sample_path = DATA_DIR / "sample_submission.csv"
-sample = (
-    pd.read_csv(sample_path)
-    if sample_path.exists()
-    else test[["id"]].copy()
-)
 
 assert data["id"].is_unique, "Training IDs must be unique."
-assert test["id"].is_unique, "Test IDs must be unique."
 assert data[["text", "label"]].notna().all().all(), (
     "Training data contains missing values."
 )
-assert test["text"].notna().all(), "Test text contains missing values."
 assert set(data["label"].unique()) == {0, 1}, (
     "Labels must be 0 (human) or 1 (AI)."
 )
 
 
 # 3. Create a fixed, stratified train/validation split
-# Matches the logistic regression split when the input rows
-# are identical and in the same order.
 train_idx, val_idx = train_test_split(
     np.arange(len(data)),
     test_size=0.2,
@@ -69,7 +58,6 @@ split.to_csv(OUTPUT_DIR / "split.csv", index=False)
 
 
 # Check for normalized exact duplicates across the split.
-# This does not detect all near-duplicates or source leakage.
 def normalize(text):
     return (
         text.str.lower()
@@ -88,7 +76,6 @@ if overlap:
 
 
 # 4. Define the TF-IDF + Linear SVM pipeline
-# TF-IDF settings match the team's logistic regression model.
 def build_model(c):
     return Pipeline([
         (
@@ -203,7 +190,6 @@ print(cm.to_string())
 
 cm.to_csv(OUTPUT_DIR / "confusion_matrix.csv")
 
-# Save validation predictions for error analysis.
 validation_results = val[["id", "label"]].copy()
 validation_results["p_ai"] = val_prob
 validation_results["prediction"] = val_pred
@@ -213,33 +199,10 @@ validation_results.to_csv(
 )
 
 
-# 7. Refit on all labeled data and generate test probabilities
-# The validation metrics above come from the 8,000/2,000 split.
-# Validation labels are used here only after model selection.
+# 7. Refit on all labeled data after validation and save the final model
 calibrated_model.fit(data["text"], data["label"])
 
-test_results = pd.DataFrame({
-    "id": test["id"],
-    "label": calibrated_model.predict_proba(test["text"])[:, 1]
-})
+model_path = OUTPUT_DIR / "svm_model.joblib"
+joblib.dump(calibrated_model, model_path)
 
-assert sample["id"].is_unique, "Sample submission IDs must be unique."
-assert set(sample["id"]) == set(test["id"]), (
-    "Sample submission IDs must match test IDs."
-)
-
-submission = sample[["id"]].merge(
-    test_results,
-    on="id",
-    how="left",
-    validate="one_to_one"
-)
-
-assert len(submission) == len(test)
-assert submission["label"].notna().all()
-assert submission["label"].between(0, 1).all()
-
-submission.to_csv(OUTPUT_DIR / "submission.csv", index=False)
-
-print(f"\nSubmission saved: {len(submission):,} test predictions")
-print(f"Output directory: {OUTPUT_DIR.resolve()}")
+print(f"\nModel saved: {model_path.resolve()}")
