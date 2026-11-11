@@ -1,0 +1,12 @@
+{
+  "old_auroc": 0.9704619999999999,
+  "new_auroc": 0.9708070000000001,
+  "difference": 0.00034500000000015074,
+  "paired_stratified_bootstrap_95_percent_interval": [
+    -0.0009971250000001292,
+    0.0016332249999998871
+  ],
+  "resamples": 2000,
+  "seed": 42,
+  "note": "Descriptive uncertainty on reused selection set; does not adjust for model-selection bias or estimate Kaggle performance."
+}

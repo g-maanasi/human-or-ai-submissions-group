@@ -1,0 +1,4 @@
+configuration,C,train_seconds,train_auroc,validation_auroc
+lowercase_char,1,18.999704792004195,1.0,0.970703
+word_boundary_char,1,15.617680791998282,1.0,0.9528159999999999
+longer_char,1,43.841983666992746,1.0,0.9708070000000001

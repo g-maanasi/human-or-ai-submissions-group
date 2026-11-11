@@ -1,0 +1,9 @@
+{
+  "configuration": "longer_char",
+  "C": 1,
+  "train_seconds": 43.841983666992746,
+  "train_auroc": 1.0,
+  "validation_auroc": 0.9708070000000001,
+  "previous_validation_auroc": 0.970462,
+  "calibrated_validation_auroc": 0.9708070000000001
+}
