@@ -12,7 +12,7 @@
 
 The selected entry combines the standardized v2 score (75%) with the fine-tuned DistilRoBERTa margin (25%). It reached 0.996868 AUROC on the 2,000 original validation passages and a reported 0.95934 on the public leaderboard. The v2 model combines boosted style and language-model features with word TF-IDF logistic regression. All controlled fits use seed 42.
 
-[Open the selected pipeline in Colab](https://colab.research.google.com/github/g-maanasi/human-or-ai-submissions-group/blob/submission/group-21/submissions/group-21/distilroberta/Group21_Human_or_AI.ipynb) or use the commands below from the team directory. The selected pipeline uses a separate Python 3.11/3.12 environment with a CUDA GPU. Set the data path to the folder containing the four competition CSVs.
+Run the commands below from the team directory. The selected pipeline uses a separate Python 3.11/3.12 environment with a CUDA GPU. Set the data path to the folder containing the four competition CSVs.
 
 ```bash
 python3 -m venv .venv
@@ -24,7 +24,7 @@ python predict.py --data-dir /path/to/data --out-dir outputs
 
 `train.py` evaluates the seed-42 split and refits the selected models on all 10,000 labels. `predict.py` loads the fitted components, scores the test passages, and writes `outputs/submission.csv` in sample order. [Detailed commands, required files and experiment order](distilroberta/README.md)
 
-AI assistants helped develop and debug the experimental code, package the notebooks, and draft the report. The team ran the models and compared their scores. We checked the selected blend against the saved component predictions and the Kaggle sample IDs.
+AI assistants helped develop and debug the experimental code, package the Python entrypoints, and draft the report. The team ran the models and compared their scores. We checked the selected blend against the saved component predictions and the Kaggle sample IDs.
 
 ## Setup for the DeBERTa and SVM experiments
 

@@ -1,33 +1,22 @@
 """Train and evaluate Group 21's selected DistilRoBERTa blend on a CUDA machine."""
 import argparse
 import gc
-import json
 import os
 from pathlib import Path
 
 
-NOTEBOOKS = Path(__file__).resolve().parent / "distilroberta" / "notebooks"
+EXPERIMENTS = Path(__file__).resolve().parent / "distilroberta" / "experiments"
 
 
-def run_notebooks(names, export_test_predictions=False):
-    # The research notebooks share fitted estimators within a stage. Start the
-    # transformer stage in a fresh namespace to release the sparse feature matrices.
+def run_experiments(names):
     namespace = {"__name__": "__main__", "display": print}
     for name in names:
-        with (NOTEBOOKS / name).open() as stream:
-            notebook = json.load(stream)
-        for index, cell in enumerate(notebook["cells"], start=1):
-            tags = cell.get("metadata", {}).get("tags", [])
-            if "export-selected-test-predictions" in tags and not export_test_predictions:
-                continue
-            if cell["cell_type"] == "code":
-                location = f"{name}, cell {index}"
-                print(f"Running {location}", flush=True)
-                source = "".join(cell["source"])
-                exec(compile(source, location, "exec"), namespace)
+        path = EXPERIMENTS / name
+        print(f"Running {name}", flush=True)
+        exec(compile(path.read_text(), str(path), "exec"), namespace)
 
 
-def main(export_test_predictions=False):
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, default=Path("outputs"))
@@ -53,14 +42,14 @@ def main(export_test_predictions=False):
     os.environ.update(DATA_DIR=str(args.data_dir.resolve()), OUT_DIR=str(args.out_dir.resolve()),
                       MPLBACKEND="Agg", FINAL_FIT="1")
     if args.stage in {"v2", "all"}:
-        run_notebooks(["01_baselines.ipynb", "02_robustness.ipynb"])
+        run_experiments(["01_baselines.py", "02_robustness.py"])
         gc.collect()
         torch.cuda.empty_cache()
     if args.stage in {"transformer", "blend", "all"}:
-        notebooks = ["03_distilroberta.ipynb"]
+        experiments = ["03_distilroberta.py"]
         if args.stage in {"all", "blend"}:
-            notebooks.append("04_paired_blend.ipynb")
-        run_notebooks(notebooks, export_test_predictions=export_test_predictions)
+            experiments.append("04_paired_blend.py")
+        run_experiments(experiments)
 
 
 if __name__ == "__main__":
