@@ -72,7 +72,7 @@ Windows:
 
 | Metric           | Result                                        |
 | ---------------- | --------------------------------------------- |
-| Training AUROC   | Unavailable in the recorded run |
+| Training AUROC   | 0.999159                                      |
 | Validation AUROC | 0.991956                                      |
 | Training time    | 1 hr 1 min 36 sec                             |
 | Kaggle AUROC     | 0.93123                                       |
