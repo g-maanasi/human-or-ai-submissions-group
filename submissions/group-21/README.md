@@ -1,242 +1,69 @@
-# Group 21 | Human or AI? Kaggle Competition
+# Group 21 | DistilRoBERTa and robust feature blend
 
-**Team members**
+**Team members:** Maanasi Ganapathy (mg2563), Ke Dong (kd563), Reuben Ronald Miranda (rrm226)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-- Maanasi Ganapathy (mg2563) — DeBERTa-v3-base
-- Ke Dong (kd563) — Linear SVM with TF-IDF features
-- Reuben Ronald Miranda (rrm226) | DistilRoBERTa, robust feature blend and evaluation
-=======
-## Final model
+**Kaggle team name:** Group Number 21
 
-Our selected submission uses Reuben’s blend of 75% standardized v2 scores and 25% fine-tuned DistilRoBERTa margins. The v2 component combines a boosted style/language-model classifier with word TF-IDF logistic regression.
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-- Maanasi Ganapathy (mg2563) — DeBERTa-v3-base
-- Ke Dong (kd563) — Linear SVM with TF-IDF features
-- [Team member 3] ([NetID]) — [Model or contribution]
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
+**Model contributor:** Reuben Ronald Miranda (rrm226)
 
-**Kaggle team:** Group 21.
+The selected model combines 75% of a standardized v2 score with 25% of a standardized fine-tuned DistilRoBERTa margin. V2 averages standardized scores from word TF-IDF logistic regression and a gradient-boosted classifier using style and language-model features. A sigmoid converts the final blended margin to an AI-authorship score.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-## Selected submission
+## Setup
 
-The selected entry combines the standardized v2 score (75%) with the fine-tuned DistilRoBERTa margin (25%). It reached 0.996868 AUROC on the 2,000 original validation passages and a reported 0.95934 on the public leaderboard. The v2 model combines boosted style and language-model features with word TF-IDF logistic regression. All controlled fits use seed 42.
-
-Run the commands below from the team directory. The selected pipeline uses a separate Python 3.11/3.12 environment with a CUDA GPU. Set the data path to the folder containing the four competition CSVs.
-=======
-Use Python 3.11 or 3.12 and a CUDA-enabled GPU for training. Internet access is required for initial pretrained model downloads.
-
-Run these commands from the repository root:
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-Run these commands from `submissions/group-21/`:
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
+Run all commands from `submissions/group-21/` in the team repository. Use Python 3.11 or 3.12 and a CUDA GPU for training.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-<<<<<<< HEAD
 python -m pip install -r requirements.txt
-<<<<<<< HEAD
-RUN_TRAIN_DIAGNOSTIC=1 python train.py --data-dir /path/to/data --out-dir outputs
-python predict.py --data-dir /path/to/data --out-dir outputs
 ```
 
-`train.py` evaluates the seed-42 split and refits the selected models on all 10,000 labels. `predict.py` loads the fitted components, scores the test passages, and writes `outputs/submission.csv` in sample order. [Detailed commands, required files and experiment order](distilroberta/README.md)
+Place `train.csv`, `unlabeled.csv`, `test.csv`, and `sample_submission.csv` in `./data/`.
 
-AI assistants helped develop and debug the experimental code, package the Python entrypoints, and draft the report. The team ran the models and compared their scores. We checked the selected blend against the saved component predictions and the Kaggle sample IDs.
+The entrypoints use the supporting Python files under `distilroberta/`. Keep that directory alongside `train.py` and `predict.py`. The root requirements file loads `distilroberta/requirements.txt`.
 
-## Setup for the DeBERTa and SVM experiments
-
-Run these commands from `submissions/group-21/`:
+## Train / validate
 
 ```bash
-python3 -m venv .venv-baselines
-source .venv-baselines/bin/activate
-python -m pip install -r deberta/requirements.txt
-=======
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-pip install -r requirements.txt
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
+RUN_TRAIN_DIAGNOSTIC=1 python train.py --data-dir data --out-dir outputs
 ```
 
-Place `train.csv`, `unlabeled.csv`, and `test.csv` in `group-21`. Keep the data and trained checkpoints out of Git. The DeBERTa run documented below uses `train.csv` for training and validation and `test.csv` for prediction.
+This command evaluates the fixed 8,000/2,000 split, runs the baseline and robustness experiments, records the selected blend's training and validation AUROC, and fits the final models on all 10,000 labeled passages.
 
-## DeBERTa-v3-base | Maanasi Ganapathy
+Training saves the v2 estimators and fitted vocabulary to `outputs/distilroberta_v1/v2.joblib`. The transformer checkpoint includes its tokenizer and is identified by `outputs/distilroberta_v1/final_checkpoint.json`.
 
-I fine-tuned `microsoft/deberta-v3-base` for binary text classification over three epochs. Passages were tokenized with the pretrained DeBERTa tokenizer. The model outputs a probability for class `1`, which represents AI-generated text. Class `0` represents human-written text.
-
-### Train and validate
-
-```bash
-python deberta/train.py --help
-```
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-**Training command:**
-Mac:
-`PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 caffeinate -i python3 deberta/train.py \
-  --train-csv train.csv \
-=======
-**Training command:**
-Mac:
-`PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 caffeinate -i python3 submissions/group-21/deberta/train.py \
-  --train-csv submissions/group-21/train.csv \
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
-  --output-dir ~/runs/group21-deberta \
-  --batch-size 1 \
-  --grad-accum 16 \
-  --eval-batch-size 2`
-<<<<<<< HEAD
-
-Windows:
-`python deberta/train.py \
-  --train-csv train.csv \
-  --output-dir "$HOME/runs/group21-deberta" \
-  --batch-size 1 \
-  --grad-accum 16 \
-  --eval-batch-size 2`
-
-- **Seed:** `42`
-- **Split:** Stratified split of `train.csv` into 8,000 training rows and 2,000 validation rows
-- **Epochs:** `3`
-- **Saved checkpoint:** `~/runs/group21-deberta/best_model`
-
-| Metric           | Result                                        |
-| ---------------- | --------------------------------------------- |
-| Training AUROC   | 0.999159                                      |
-| Validation AUROC | 0.991956                                      |
-| Training time    | 1 hr 1 min 36 sec                             |
-| Kaggle AUROC     | 0.93123                                       |
-
-### Generate Kaggle predictions
-=======
-The training pipeline runs the baseline, robustness, transformer, and blend experiments. It evaluates on the fixed validation split and fits the final submission components on all 10,000 labeled examples.
-=======
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
-
-Windows:
-`python submissions/group-21/deberta/train.py \
-  --train-csv submissions/group-21/train.csv \
-  --output-dir "$HOME/runs/group21-deberta" \
-  --batch-size 1 \
-  --grad-accum 16 \
-  --eval-batch-size 2`
-
-<<<<<<< HEAD
 ## Predict (writes Kaggle submission)
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-- **Seed:** `42`
-- **Split:** Stratified split of `train.csv` into 8,000 training rows and 2,000 validation rows
-- **Epochs:** `3`
-- **Saved checkpoint:** `~/runs/group21-deberta/best_model`
-
-| Metric           | Result                                        |
-| ---------------- | --------------------------------------------- |
-| Training AUROC   | [Measure on the original 8,000 training rows] |
-| Validation AUROC | 0.991956                                      |
-| Training time    | 1 hr 1 min 36 sec                             |
-| Kaggle AUROC     | 0.93123                                       |
-
-### Generate Kaggle predictions
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
 
 ```bash
-python deberta/predict.py --help
+python predict.py --data-dir data --out-dir outputs
 ```
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-**Generate predictions from the saved checkpoint:**
-
-```bash
-python deberta/predict.py --test-csv test.csv --model-dir ~/runs/group21-deberta/best_model --output-csv submission_deberta.csv
-```
-
-Prediction uses the saved `best_model` checkpoint and writes one probability of AI authorship per test ID to `submission_deberta.csv`.
-=======
-This loads the saved components and writes `outputs/submission.csv`, preserving the official sample submission’s ID order. Prediction supports CPU or CUDA.
+Prediction loads the saved models and reads `test.csv` and `sample_submission.csv`. It writes `outputs/submission.csv` with exactly 3,000 rows, columns `id,label`, and one probability per test ID in sample-submission order. Class 1 means AI-generated. Prediction supports CUDA and CPU.
 
 ## Seeds and notes
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-**Prediction command:** `[Paste the exact command used to generate submission.csv]`
 
-Prediction uses the saved `best_model` checkpoint and writes one probability of AI authorship per test ID to `submission.csv`.
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
+- Global seed is 42.
+- Validation uses a fixed stratified 2,000-row holdout, with 1,000 passages per class. Split IDs are stored in `outputs/val_ids.csv`.
+- The fitting partition contains 8,000 original labeled passages. V2 also trains on edited copies of fitting passages. DistilRoBERTa trains on original passages.
+- V2's word vocabulary and IDF use all labeled and unlabeled text, including validation text without labels. This is a transductive feature-fitting procedure.
+- DistilRoBERTa uses `distilbert/distilroberta-base`, revision `fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b`, maximum length 320 tokens, learning rate 0.00002, two epochs, training batch size 16, and mixed precision.
+- Copy the historical `pretrained_revision.txt` into `outputs/distilroberta_v1/` to reuse that revision. A new output folder otherwise records the model revision resolved at run time.
+- V2 uses token-predictability features from `distilgpt2`. The comparison experiments also use `sentence-transformers/all-MiniLM-L6-v2` embeddings.
+- The paired robustness study applies identical edited passages to both components before comparing them. Blend weights were selected using validation experiments.
+- Final prediction models use all 10,000 labels after model selection.
+- Keep raw competition files, exported passage text, prediction CSVs, checkpoints, and credentials outside Git. Retain the original split IDs and model revision when replaying the historical experiment.
 
-## Linear SVM | Ke Dong (kd563)
+| Selected blend result                          |    AUROC |
+| ---------------------------------------------- | -------: |
+| Training, 8,000 original fitting passages      | 1.000000 |
+| Validation, 2,000 original held-out passages   | 0.996868 |
+| Paired lowercase and punctuation-removal probe | 0.978895 |
+| Reported Kaggle public score                   |  0.95934 |
 
-- **Model and preprocessing:** The selected model combines word and character TF-IDF features, followed by `LinearSVC(C=1)`. Word features use unigrams and bigrams, `max_features=50000`, and `min_df=2`. Character features preserve case and use 3–6-grams, `max_features=200000`, and `min_df=3`. Both feature blocks use `sublinear_tf=True` and L2 normalization. AI probabilities are obtained through sigmoid calibration with three-fold stratified cross-validation within the training partition, using `ensemble=False`. Each calibration fold fits its own complete TF-IDF and SVM pipeline.
+A fresh validation-stage DistilRoBERTa fit took 130.8624 seconds on a Tesla T4 for two epochs over 8,000 rows. This measurement excludes download and dataset tokenization and covers the transformer component. Total v2 and blend runtimes were not recorded.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-- **Training and validation command:** `python svm/train.py --train-csv train.csv --output-dir outputs/svm`
+Verification covered the saved validation scores, ID alignment, prediction CSV format, and checkpoint-based prediction with local test models. A complete GPU replay of the packaged training pipeline remains unverified. Numerical differences can arise from hardware and dependency versions.
 
-- **Prediction command:** `python svm/predict.py --test-csv test.csv --model-path outputs/svm/svm_model.joblib --output-csv outputs/submission_svm.csv`
+## AI assistance
 
-- **Seed and validation split:** Random seed `42`; a fixed stratified split of the original `train.csv` into 8,000 training examples and 2,000 validation examples. Feature fitting and probability calibration exclude the held-out validation data. The validation set is used for model selection. The selected Round 2 submission was generated after refitting the calibrated pipeline on all 10,000 labeled examples.
-
-- **Experiments and model selection:** The initial word-only SVM compared `C=[0.1, 1, 10]`. Subsequent experiments added character features and compared alternative character representations. In Round 2, `C=1` was held fixed while testing a larger lowercased character vocabulary, word-boundary character features, and case-sensitive 3–6-gram character features. The case-sensitive 3–6-gram configuration achieved the highest validation AUROC and was selected.
-
-- **Results:**
-
-  | Model | Validation AUROC | Kaggle Public AUROC |
-  | --- | --- | --- |
-  | Original word-only TF-IDF SVM | 0.942530 | 0.84925 |
-  | Word + lowercase character 3–5-gram TF-IDF SVM | 0.970462 | 0.87440 |
-  | Selected: word + case-sensitive character 3–6-gram TF-IDF SVM*| 0.970807| 0.89627 |
-
-  For the selected configuration, uncalibrated training AUROC was **1.000000**. Validation AUROC before and after sigmoid calibration was **0.970807**. Fitting the selected uncalibrated TF-IDF and SVM pipeline took **43.84 seconds**, excluding evaluation, probability calibration, other experimental configurations, and final refitting.
-
-- **Reproducibility:** Keep raw competition data and trained model artifacts out of Git. The commands above run from the team directory. The saved prediction pipeline must include the fitted TF-IDF features, SVM classifier, and probability calibration. Dependencies are listed in the team’s `requirements.txt`.
-
-- **Interpretation and limitations:** Adding character features improved both validation and public leaderboard performance relative to the word-only baseline. However, a substantial validation-to-leaderboard gap remains. This is consistent with limited generalization to unfamiliar domains, generators, and modified passages, although the exact causes have not been established. The small validation improvement from the first combined-feature model to Round 2 was not conclusive in the paired bootstrap comparison. Public leaderboard AUROC is not the final private leaderboard score.
-=======
-- Maanasi Ganapathy — DeBERTa-v3-base experiments
-- Ke Dong — Linear SVM with word and character TF-IDF features
-- Reuben Ronald Miranda — DistilRoBERTa, robust feature blend, and evaluation
-=======
-- **Training and validation command:** The training entrypoint is `submissions/group-21/svm/train.py`. Run it from the repository root with the data and output arguments supported by the script. 
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
-
-- **Prediction command:** The prediction entrypoint is `submissions/group-21/svm/predict.py`. 
-
-<<<<<<< HEAD
-AI assistants helped develop and debug experimental code and package the Python entrypoints. The team ran the experiments and compared model scores.
->>>>>>> 0432e87 (Updated the read me to be more like the example submission)
-=======
-- **Seed and validation split:** Random seed `42`; a fixed stratified split of the original `train.csv` into 8,000 training examples and 2,000 validation examples. Feature fitting and probability calibration exclude the held-out validation data. The validation set is used for model selection. The selected Round 2 submission was generated after refitting the calibrated pipeline on all 10,000 labeled examples.
-
-- **Experiments and model selection:** The initial word-only SVM compared `C=[0.1, 1, 10]`. Subsequent experiments added character features and compared alternative character representations. In Round 2, `C=1` was held fixed while testing a larger lowercased character vocabulary, word-boundary character features, and case-sensitive 3–6-gram character features. The case-sensitive 3–6-gram configuration achieved the highest validation AUROC and was selected.
-
-- **Results:**
-
-  | Model | Validation AUROC | Kaggle Public AUROC |
-  | Original word-only TF-IDF SVM | 0.942530 | 0.84925 |
-  | Word + lowercase character 3–5-gram TF-IDF SVM | 0.970462 | 0.87440 |
-  | Selected: word + case-sensitive character 3–6-gram TF-IDF SVM*| 0.970807| 0.89627 |
-
-  For the selected configuration, uncalibrated training AUROC was **1.000000**. Validation AUROC before and after sigmoid calibration was **0.970807**. Fitting the selected uncalibrated TF-IDF and SVM pipeline took **43.84 seconds**, excluding evaluation, probability calibration, other experimental configurations, and final refitting.
-
-- **Reproducibility:** Keep raw competition data and trained model artifacts out of Git. Document the actual data location and saved model path in the commands above. The saved prediction pipeline must include the fitted TF-IDF features, SVM classifier, and probability calibration. Dependencies are listed in the team’s `requirements.txt`.
-
-- **Interpretation and limitations:** Adding character features improved both validation and public leaderboard performance relative to the word-only baseline. However, a substantial validation-to-leaderboard gap remains. This is consistent with limited generalization to unfamiliar domains, generators, and modified passages, although the exact causes have not been established. The small validation improvement from the first combined-feature model to Round 2 was not conclusive in the paired bootstrap comparison. Public leaderboard AUROC is not the final private leaderboard score.
-
-
-
-## [Model 3] | [Team member 3]
-
-- **Model and preprocessing:** [Describe the approach]
-- **Training and validation command:** `[Command]`
-- **Prediction command:** `[Command]`
-- **Seed and validation split:** [Details]
-- **Results:** [Training AUROC, validation AUROC, and training time]
->>>>>>> 213955b (Revert "Updated the read me to be more like the example submission")
+ChatGPT and Codex assisted with experiment code, debugging, explanations, result analysis, packaging, and report drafting. The team ran the experiments and selected the final approach. We checked the selected blend's held-out AUROC, training AUROC, length-bin results, error examples, and submission IDs against saved model outputs. Passage scores were produced by the documented models. No external LLM API was used to label or predict competition test passages.
